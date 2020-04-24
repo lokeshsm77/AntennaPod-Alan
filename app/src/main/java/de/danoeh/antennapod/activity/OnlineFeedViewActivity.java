@@ -28,6 +28,8 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.adapter.FeedItemlistDescriptionAdapter;
+import de.danoeh.antennapod.alan.Alan;
+import de.danoeh.antennapod.alan.AVListener;
 import de.danoeh.antennapod.core.ClientConfig;
 import de.danoeh.antennapod.core.dialog.DownloadRequestErrorDialogCreator;
 import de.danoeh.antennapod.core.event.DownloadEvent;
@@ -81,7 +83,7 @@ import java.util.Map;
  * If the feed cannot be downloaded or parsed, an error dialog will be displayed
  * and the activity will finish as soon as the error dialog is closed.
  */
-public class OnlineFeedViewActivity extends AppCompatActivity {
+public class OnlineFeedViewActivity extends AppCompatActivity implements AVListener {
 
     public static final String ARG_FEEDURL = "arg.feedurl";
     // Optional argument: specify a title for the actionbar.
@@ -142,6 +144,7 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
                         savedInstanceState.getString("password"));
             }
         }
+        initializeAlanListener();
     }
 
     private void showNoPodcastFoundError() {
@@ -154,6 +157,8 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
                     finish();
                 })
                 .show();
+
+        Alan.getInstance().playText(getString(R.string.null_value_podcast_error));
     }
 
     /**
@@ -431,6 +436,14 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
         author.setText(feed.getAuthor());
         description.setText(feed.getDescription());
 
+        Alan.getInstance().playText("Selected, podcast details are");
+
+        Alan.getInstance().playText("Title "+ feed.getTitle());
+
+        Alan.getInstance().playText("Author is " + feed.getAuthor());
+
+        Alan.getInstance().playText("Do you want to read description, yes or no?");
+
         subscribeButton.setOnClickListener(v -> {
             if (feedInFeedlist(feed)) {
                 openFeed();
@@ -630,6 +643,35 @@ public class OnlineFeedViewActivity extends AppCompatActivity {
             dialog = ab.show();
         });
         return true;
+    }
+
+    /**
+     * method sets the listener and visual state for the alan SDK.
+     */
+    private void initializeAlanListener(){
+        Alan.getInstance().setVisualState("Podcast Feed Details");
+        Alan.getInstance().registerCmdListener(this);
+    }
+
+    @Override
+    public void handleAlanCommand(String alanCmd, String alanCmdValue) {
+        switch(alanCmd){
+            case "go-back":
+                Alan.getInstance().playText("Closing podcast details.");
+                setResult(100);
+                finish();
+                break;
+            case "subscribe":
+
+                break;
+            case "read-description":
+                if(this.feed.getLanguage() != null && this.feed.getLanguage().equals("en")) {
+                    Alan.getInstance().playText(this.feed.getDescription().replaceAll("\"", " "));
+                } else {
+                    Alan.getInstance().playText("Podcast language is not specified, or recognized at the moment, currently supported language is english, I am trying to get better");
+                }
+                break;
+        }
     }
 
     private class FeedViewAuthenticationDialog extends AuthenticationDialog {

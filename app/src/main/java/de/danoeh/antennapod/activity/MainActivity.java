@@ -24,10 +24,13 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.alan.alansdk.button.AlanButton;
 import com.bumptech.glide.Glide;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.snackbar.Snackbar;
 import de.danoeh.antennapod.R;
+import de.danoeh.antennapod.alan.Alan;
 import de.danoeh.antennapod.core.event.MessageEvent;
 import de.danoeh.antennapod.core.preferences.UserPreferences;
 import de.danoeh.antennapod.core.util.StorageUtils;
@@ -76,6 +79,8 @@ public class MainActivity extends CastEnabledActivity {
     private LockableBottomSheetBehavior sheetBehavior;
     private long lastBackButtonPressTime = 0;
     private RecyclerView.RecycledViewPool recycledViewPool = new RecyclerView.RecycledViewPool();
+
+    private AlanButton alanButton;
 
     @NonNull
     public static Intent getIntentToOpenFeed(@NonNull Context context, long feedId) {
@@ -133,6 +138,28 @@ public class MainActivity extends CastEnabledActivity {
         sheetBehavior.setPeekHeight((int) getResources().getDimension(R.dimen.external_player_height));
         sheetBehavior.setHideable(false);
         sheetBehavior.setBottomSheetCallback(bottomSheetCallback);
+        configAlanVoice();
+    }
+
+    /**
+     * Method configures the alan voice command UI with application, initializes the Alan command
+     * and voice command listener with Alan SDK.
+     */
+    private void configAlanVoice(){
+        if(this.alanButton == null) {
+            alanButton = findViewById(R.id.alan_button);
+            Alan.getInstance().setAlanButton(alanButton);
+            alanButton.setButtonAlign(AlanButton.BUTTON_RIGHT);
+            setAlanVisualState();
+        }
+    }
+
+    /**
+     * Method helps to set the visual state of the application.
+     *
+     */
+    private void setAlanVisualState(){
+        Alan.getInstance().setVisualState("Search Podcast");
     }
 
     private BottomSheetBehavior.BottomSheetCallback bottomSheetCallback =
@@ -342,6 +369,11 @@ public class MainActivity extends CastEnabledActivity {
     protected void onStop() {
         super.onStop();
         EventBus.getDefault().unregister(this);
+    }
+
+    private void unRegisterAlan(){
+        Alan.clearInstance();
+        this.alanButton = null;
     }
 
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)

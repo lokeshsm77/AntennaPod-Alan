@@ -1,3 +1,4 @@
+
 buildscript {
     repositories {
         google()
@@ -17,6 +18,8 @@ allprojects {
         google()
         jcenter()
         maven { url "https://jitpack.io" }
+        maven { url "https://mymavenrepo.com/repo/fSCXIHAoBMWBdlZGqq6n/"}
+
     }
 
     gradle.projectsEvaluated {
@@ -43,7 +46,7 @@ subprojects {
 
 project.ext {
     compileSdkVersion = 28
-    minSdkVersion = 16
+    minSdkVersion = 21
     targetSdkVersion = 28
 
     workManagerVersion = "2.3.4"
@@ -71,6 +74,7 @@ project.ext {
     castCompanionLibVer = "2.9.1"
     playServicesVersion = "8.4.0"
     wearableSupportVersion = "2.4.0"
+    alanSDKVersion = "4.7.7"
 }
 
 wrapper {

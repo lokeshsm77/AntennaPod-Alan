@@ -12,6 +12,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.TextView;
+
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -19,6 +21,8 @@ import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.activity.MainActivity;
 import de.danoeh.antennapod.activity.OnlineFeedViewActivity;
 import de.danoeh.antennapod.activity.OpmlImportActivity;
+import de.danoeh.antennapod.alan.Alan;
+import de.danoeh.antennapod.alan.AVListener;
 import de.danoeh.antennapod.discovery.CombinedSearcher;
 import de.danoeh.antennapod.discovery.FyydPodcastSearcher;
 import de.danoeh.antennapod.discovery.ItunesPodcastSearcher;
@@ -27,7 +31,7 @@ import de.danoeh.antennapod.fragment.gpodnet.GpodnetMainFragment;
 /**
  * Provides actions for adding new podcast subscriptions.
  */
-public class AddFeedFragment extends Fragment {
+public class AddFeedFragment extends Fragment implements AVListener {
 
     public static final String TAG = "AddFeedFragment";
     private static final int REQUEST_CODE_CHOOSE_OPML_IMPORT_PATH = 1;
@@ -69,7 +73,24 @@ public class AddFeedFragment extends Fragment {
             }
         });
         root.findViewById(R.id.search_icon).setOnClickListener(view -> performSearch());
+
+        initializeAlanListener();
+
         return root;
+    }
+
+    @Override
+    public void onHiddenChanged(boolean hiddenState){
+        if(!hiddenState)
+            initializeAlanListener();
+    }
+
+    /**
+     * method sets the listener and visual state for the alan SDK.
+     */
+    private void initializeAlanListener(){
+            Alan.getInstance().setVisualState("Search Podcast");
+            Alan.getInstance().registerCmdListener(this);
     }
 
     private void showAddViaUrlDialog() {
@@ -102,6 +123,7 @@ public class AddFeedFragment extends Fragment {
             addUrl(query);
             return;
         }
+        Alan.getInstance().playText("Searching for " + query);
         activity.loadChildFragment(OnlineSearchFragment.newInstance(CombinedSearcher.class, query));
     }
 
@@ -127,6 +149,29 @@ public class AddFeedFragment extends Fragment {
             Intent intent = new Intent(getContext(), OpmlImportActivity.class);
             intent.setData(uri);
             startActivity(intent);
+        }
+    }
+
+    private void clearSearchField(){
+        combinedFeedSearchBox.setText("", TextView.BufferType.EDITABLE);
+    }
+
+    @Override
+    public void handleAlanCommand(String cmd, String value) {
+        switch (cmd){
+            case "add-text":
+                combinedFeedSearchBox.setText(value, TextView.BufferType.EDITABLE);
+                break;
+            case "clear-text":
+                clearSearchField();
+                break;
+            case "search":
+                this.performSearch();
+                break;
+            default:
+                break;
+
+
         }
     }
 }

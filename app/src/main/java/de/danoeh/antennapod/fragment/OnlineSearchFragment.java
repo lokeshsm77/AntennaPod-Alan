@@ -2,6 +2,8 @@ package de.danoeh.antennapod.fragment;
 
 import android.content.Intent;
 import android.os.Bundle;
+
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.core.view.MenuItemCompat;
@@ -14,21 +16,29 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import org.json.JSONObject;
+
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.activity.OnlineFeedViewActivity;
 import de.danoeh.antennapod.adapter.itunes.ItunesAdapter;
+import de.danoeh.antennapod.alan.Alan;
+import de.danoeh.antennapod.alan.AVListener;
 import de.danoeh.antennapod.discovery.PodcastSearchResult;
 import de.danoeh.antennapod.discovery.PodcastSearcher;
 import de.danoeh.antennapod.discovery.PodcastSearcherRegistry;
 import io.reactivex.disposables.Disposable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class OnlineSearchFragment extends Fragment {
+public class OnlineSearchFragment extends Fragment implements AVListener {
 
     private static final String TAG = "FyydSearchFragment";
     private static final String ARG_SEARCHER = "searcher";
@@ -50,6 +60,8 @@ public class OnlineSearchFragment extends Fragment {
      */
     private List<PodcastSearchResult> searchResults;
     private Disposable disposable;
+
+    static final int ACTIVITY_FEED_RESULT = 100;
 
     public static OnlineSearchFragment newInstance(Class<? extends PodcastSearcher> searchProvider) {
         return newInstance(searchProvider, null);
@@ -101,7 +113,8 @@ public class OnlineSearchFragment extends Fragment {
             PodcastSearchResult podcast = searchResults.get(position);
             Intent intent = new Intent(getActivity(), OnlineFeedViewActivity.class);
             intent.putExtra(OnlineFeedViewActivity.ARG_FEEDURL, podcast.feedUrl);
-            startActivity(intent);
+//            startActivity(intent);
+            startActivityForResult(intent, ACTIVITY_FEED_RESULT);
         });
         progressBar = root.findViewById(R.id.progressBar);
         txtvError = root.findViewById(R.id.txtvError);
@@ -109,8 +122,11 @@ public class OnlineSearchFragment extends Fragment {
         txtvEmpty = root.findViewById(android.R.id.empty);
 
         txtvEmpty.setText(getString(R.string.search_powered_by, searchProvider.getName()));
+        initializeAlanListener();
         return root;
     }
+
+
 
     @Override
     public void onDestroy() {
@@ -175,6 +191,17 @@ public class OnlineSearchFragment extends Fragment {
             gridView.setVisibility(!searchResults.isEmpty() ? View.VISIBLE : View.GONE);
             txtvEmpty.setVisibility(searchResults.isEmpty() ? View.VISIBLE : View.GONE);
             txtvEmpty.setText(getString(R.string.no_results_for_query, query));
+            String alanMsg = "Completed the search, there are " +  searchResults.size() + " results.";
+            Map<String, String> resultsData = new HashMap<>();
+            resultsData.put("count", "" + searchResults.size());
+            JSONObject jsonObject = new JSONObject(resultsData);
+
+            Alan.getInstance().callProjectApi("setPodcastResultCount", jsonObject.toString());
+
+            if(searchResults.isEmpty())
+                alanMsg = getString(R.string.no_results_for_query, query).replaceAll("\"", " ");
+
+            Alan.getInstance().playText(alanMsg);
         }, error -> {
                 Log.e(TAG, Log.getStackTraceString(error));
                 progressBar.setVisibility(View.GONE);
@@ -182,7 +209,8 @@ public class OnlineSearchFragment extends Fragment {
                 txtvError.setVisibility(View.VISIBLE);
                 butRetry.setOnClickListener(v -> search(query));
                 butRetry.setVisibility(View.VISIBLE);
-            });
+                Alan.getInstance().playText(txtvError.getText().toString());
+        });
     }
 
     private void showOnlyProgressBar() {
@@ -191,5 +219,45 @@ public class OnlineSearchFragment extends Fragment {
         butRetry.setVisibility(View.GONE);
         txtvEmpty.setVisibility(View.GONE);
         progressBar.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onHiddenChanged(boolean hiddenState){
+        if(!hiddenState)
+            initializeAlanListener();
+    }
+
+    /**
+     * method sets the listener and visual state for the alan SDK.
+     */
+    private void initializeAlanListener(){
+        Alan.getInstance().setVisualState("Podcast Results");
+        Alan.getInstance().registerCmdListener(this);
+    }
+
+    @Override
+    public void handleAlanCommand(String alanCmd, String alanCmdValue) {
+        switch(alanCmd){
+            case "go-back":
+                EditText combinedFeedSearchBox  = getActivity().findViewById(R.id.combinedFeedSearchBox);
+                combinedFeedSearchBox.setText("", TextView.BufferType.EDITABLE);
+                getActivity().getSupportFragmentManager().popBackStack();
+                break;
+            case "select-podcast":
+                if(searchResults != null) {
+                    Alan.getInstance().getAlanButton().playText("Fetching the podcast details");
+                    Integer pos = Integer.parseInt(alanCmdValue) - 1;
+                    PodcastSearchResult podcast = searchResults.get(pos);
+                    Intent intent = new Intent(getActivity(), OnlineFeedViewActivity.class);
+                    intent.putExtra(OnlineFeedViewActivity.ARG_FEEDURL, podcast.feedUrl);
+                    startActivityForResult(intent, ACTIVITY_FEED_RESULT);
+                }
+                break;
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        initializeAlanListener();
     }
 }
