@@ -24,12 +24,20 @@ import androidx.annotation.UiThread;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NavUtils;
+
+import com.alan.alansdk.AlanCallback;
+import com.alan.alansdk.AlanState;
+import com.alan.alansdk.events.EventCommand;
+import com.alan.alansdk.events.EventOptions;
+import com.alan.alansdk.events.EventParsed;
+import com.alan.alansdk.events.EventRecognised;
+import com.alan.alansdk.events.EventText;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.adapter.FeedItemlistDescriptionAdapter;
 import de.danoeh.antennapod.alan.Alan;
-import de.danoeh.antennapod.alan.AVListener;
+import de.danoeh.antennapod.alan.data.AlanCommand;
 import de.danoeh.antennapod.core.ClientConfig;
 import de.danoeh.antennapod.core.dialog.DownloadRequestErrorDialogCreator;
 import de.danoeh.antennapod.core.event.DownloadEvent;
@@ -83,7 +91,7 @@ import java.util.Map;
  * If the feed cannot be downloaded or parsed, an error dialog will be displayed
  * and the activity will finish as soon as the error dialog is closed.
  */
-public class OnlineFeedViewActivity extends AppCompatActivity implements AVListener {
+public class OnlineFeedViewActivity extends AppCompatActivity {
 
     public static final String ARG_FEEDURL = "arg.feedurl";
     // Optional argument: specify a title for the actionbar.
@@ -649,28 +657,87 @@ public class OnlineFeedViewActivity extends AppCompatActivity implements AVListe
      * method sets the listener and visual state for the alan SDK.
      */
     private void initializeAlanListener(){
-        Alan.getInstance().setVisualState("Podcast Feed Details");
-        Alan.getInstance().registerCmdListener(this);
+        Alan.getInstance().setVisualState("Podcast Details");
+        /**
+         * Clearing the previous callbacks from the Alan if any, before registering new one.
+         * Because, no other call back should active, only the present view call back should be active.
+         */
+
+        Alan.getInstance().clearCallbacks();
+
+        Alan.getInstance().registerCallback(new AlanCallback() {
+            @Override
+            public void onAlanStateChanged(@NonNull AlanState alanState) {
+                super.onAlanStateChanged(alanState);
+            }
+
+            @Override
+            public void onRecognizedEvent(EventRecognised eventRecognised) {
+                super.onRecognizedEvent(eventRecognised);
+            }
+
+            @Override
+            public void onParsedEvent(EventParsed eventParsed) {
+                super.onParsedEvent(eventParsed);
+            }
+
+            @Override
+            public void onOptionsReceived(EventOptions eventOptions) {
+                super.onOptionsReceived(eventOptions);
+            }
+
+            @Override
+            public void onCommandReceived(EventCommand eventCommand) {
+                super.onCommandReceived(eventCommand);
+                AlanCommand alanCommand = Alan.getInstance().processAlanEventCommand(eventCommand);
+                handleAlanVoiceCommand(alanCommand);
+            }
+
+            @Override
+            public void onTextEvent(EventText eventText) {
+                super.onTextEvent(eventText);
+            }
+
+            @Override
+            public void onEvent(String event, String payload) {
+                super.onEvent(event, payload);
+            }
+
+            @Override
+            public void onError(String error) {
+                super.onError(error);
+            }
+        });
     }
 
-    @Override
-    public void handleAlanCommand(String alanCmd, String alanCmdValue) {
-        switch(alanCmd){
-            case "go-back":
-                Alan.getInstance().playText("Closing podcast details.");
-                setResult(100);
-                finish();
-                break;
-            case "subscribe":
-
-                break;
-            case "read-description":
-                if(this.feed.getLanguage() != null && this.feed.getLanguage().equals("en")) {
-                    Alan.getInstance().playText(this.feed.getDescription().replaceAll("\"", " "));
-                } else {
-                    Alan.getInstance().playText("Podcast language is not specified, or recognized at the moment, currently supported language is english, I am trying to get better");
-                }
-                break;
+    /**
+     * Method handles the alan voice commands and process the event actions associated with the voice commands.
+     *
+     * @param alanCommand
+     */
+    public void handleAlanVoiceCommand(AlanCommand alanCommand) {
+        if(!alanCommand.hasError()) {
+            String cmd = alanCommand.getCommand();
+            String value = alanCommand.getValue();
+            switch(cmd) {
+                case "go-back":
+                    Alan.getInstance().playText("Closing podcast details.");
+                    setResult(100);
+                    finish();
+                    break;
+                case "subscribe":
+                    Alan.getInstance().playText("Not implemented this feature");
+                    break;
+                case "read-description":
+                    if (this.feed.getLanguage() != null && this.feed.getLanguage().equals("en")) {
+                        Alan.getInstance().playText(this.feed.getDescription().replaceAll("\"", " "));
+                    } else {
+                        Alan.getInstance().playText("Podcast language is not specified, or recognized at the moment, currently supported language is english, I am trying to get better");
+                    }
+                    break;
+            }
+        } else{
+            Alan.getInstance().playText(alanCommand.getError());
         }
     }
 

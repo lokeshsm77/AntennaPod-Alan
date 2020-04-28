@@ -14,6 +14,15 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.alan.alansdk.AlanCallback;
+import com.alan.alansdk.AlanState;
+import com.alan.alansdk.events.EventCommand;
+import com.alan.alansdk.events.EventOptions;
+import com.alan.alansdk.events.EventParsed;
+import com.alan.alansdk.events.EventRecognised;
+import com.alan.alansdk.events.EventText;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -22,7 +31,7 @@ import de.danoeh.antennapod.activity.MainActivity;
 import de.danoeh.antennapod.activity.OnlineFeedViewActivity;
 import de.danoeh.antennapod.activity.OpmlImportActivity;
 import de.danoeh.antennapod.alan.Alan;
-import de.danoeh.antennapod.alan.AVListener;
+import de.danoeh.antennapod.alan.data.AlanCommand;
 import de.danoeh.antennapod.discovery.CombinedSearcher;
 import de.danoeh.antennapod.discovery.FyydPodcastSearcher;
 import de.danoeh.antennapod.discovery.ItunesPodcastSearcher;
@@ -31,7 +40,7 @@ import de.danoeh.antennapod.fragment.gpodnet.GpodnetMainFragment;
 /**
  * Provides actions for adding new podcast subscriptions.
  */
-public class AddFeedFragment extends Fragment implements AVListener {
+public class AddFeedFragment extends Fragment {
 
     public static final String TAG = "AddFeedFragment";
     private static final int REQUEST_CODE_CHOOSE_OPML_IMPORT_PATH = 1;
@@ -89,8 +98,107 @@ public class AddFeedFragment extends Fragment implements AVListener {
      * method sets the listener and visual state for the alan SDK.
      */
     private void initializeAlanListener(){
-            Alan.getInstance().setVisualState("Search Podcast");
-            Alan.getInstance().registerCmdListener(this);
+        Alan.getInstance().setVisualState("Add Podcast");
+
+        /**
+         * Clearing the previous callbacks from the Alan if any, before registering new one.
+         * Because, no other call back should active, only the present view call back should be active.
+         */
+
+        Alan.getInstance().clearCallbacks();
+
+        Alan.getInstance().registerCallback(new AlanCallback() {
+            @Override
+            public void onAlanStateChanged(@NonNull AlanState alanState) {
+                super.onAlanStateChanged(alanState);
+            }
+
+            @Override
+            public void onRecognizedEvent(EventRecognised eventRecognised) {
+                super.onRecognizedEvent(eventRecognised);
+            }
+
+            @Override
+            public void onParsedEvent(EventParsed eventParsed) {
+                super.onParsedEvent(eventParsed);
+            }
+
+            @Override
+            public void onOptionsReceived(EventOptions eventOptions) {
+                super.onOptionsReceived(eventOptions);
+            }
+
+            @Override
+            public void onCommandReceived(EventCommand eventCommand) {
+                super.onCommandReceived(eventCommand);
+                AlanCommand alanCommand = Alan.getInstance().processAlanEventCommand(eventCommand);
+                handleAlanVoiceCommand(alanCommand);
+            }
+
+            @Override
+            public void onTextEvent(EventText eventText) {
+                super.onTextEvent(eventText);
+            }
+
+            @Override
+            public void onEvent(String event, String payload) {
+                super.onEvent(event, payload);
+            }
+
+            @Override
+            public void onError(String error) {
+                super.onError(error);
+            }
+        });
+    }
+
+    /**
+     * Method handles the alan voice commands and process the event actions associated with the voice commands.
+     *
+     * @param alanCommand
+     */
+    public void handleAlanVoiceCommand(AlanCommand alanCommand) {
+        if(!alanCommand.hasError()) {
+            String cmd = alanCommand.getCommand();
+            String value = alanCommand.getValue();
+            switch (cmd) {
+                case "add-text":
+                    combinedFeedSearchBox.setText(value, TextView.BufferType.EDITABLE);
+                    break;
+                case "clear-text":
+                    clearSearchField();
+                    break;
+                case "search-podcast":
+                    performSearch();
+                    break;
+                case "add-url":
+                    showAddViaUrlDialog();
+                    break;
+                case "search-itunes":
+                    activity.loadChildFragment(OnlineSearchFragment.newInstance(ItunesPodcastSearcher.class));
+                    break;
+                case "search-fyyd":
+                    activity.loadChildFragment(OnlineSearchFragment.newInstance(FyydPodcastSearcher.class));
+                    break;
+                case "browse-gpodder":
+                    activity.loadChildFragment(new GpodnetMainFragment());
+                    break;
+                case "opml-import":
+                    try {
+                        Intent intentGetContentAction = new Intent(Intent.ACTION_GET_CONTENT);
+                        intentGetContentAction.addCategory(Intent.CATEGORY_OPENABLE);
+                        intentGetContentAction.setType("*/*");
+                        startActivityForResult(intentGetContentAction, REQUEST_CODE_CHOOSE_OPML_IMPORT_PATH);
+                    } catch (ActivityNotFoundException e) {
+                        Log.e(TAG, "No activity found. Should never happen...");
+                    }
+                    break;
+                default:
+                    break;
+            }
+        } else{
+            Alan.getInstance().playText(alanCommand.getError());
+        }
     }
 
     private void showAddViaUrlDialog() {
@@ -156,22 +264,4 @@ public class AddFeedFragment extends Fragment implements AVListener {
         combinedFeedSearchBox.setText("", TextView.BufferType.EDITABLE);
     }
 
-    @Override
-    public void handleAlanCommand(String cmd, String value) {
-        switch (cmd){
-            case "add-text":
-                combinedFeedSearchBox.setText(value, TextView.BufferType.EDITABLE);
-                break;
-            case "clear-text":
-                clearSearchField();
-                break;
-            case "search":
-                this.performSearch();
-                break;
-            default:
-                break;
-
-
-        }
-    }
 }

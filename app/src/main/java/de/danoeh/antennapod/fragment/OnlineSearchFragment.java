@@ -3,6 +3,7 @@ package de.danoeh.antennapod.fragment;
 import android.content.Intent;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -21,13 +22,21 @@ import android.widget.GridView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.alan.alansdk.AlanCallback;
+import com.alan.alansdk.AlanState;
+import com.alan.alansdk.events.EventCommand;
+import com.alan.alansdk.events.EventOptions;
+import com.alan.alansdk.events.EventParsed;
+import com.alan.alansdk.events.EventRecognised;
+import com.alan.alansdk.events.EventText;
+
 import org.json.JSONObject;
 
 import de.danoeh.antennapod.R;
 import de.danoeh.antennapod.activity.OnlineFeedViewActivity;
 import de.danoeh.antennapod.adapter.itunes.ItunesAdapter;
 import de.danoeh.antennapod.alan.Alan;
-import de.danoeh.antennapod.alan.AVListener;
+import de.danoeh.antennapod.alan.data.AlanCommand;
 import de.danoeh.antennapod.discovery.PodcastSearchResult;
 import de.danoeh.antennapod.discovery.PodcastSearcher;
 import de.danoeh.antennapod.discovery.PodcastSearcherRegistry;
@@ -38,7 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class OnlineSearchFragment extends Fragment implements AVListener {
+public class OnlineSearchFragment extends Fragment {
 
     private static final String TAG = "FyydSearchFragment";
     private static final String ARG_SEARCHER = "searcher";
@@ -56,7 +65,7 @@ public class OnlineSearchFragment extends Fragment implements AVListener {
     private TextView txtvEmpty;
 
     /**
-     * List of podcasts retreived from the search
+     * List of podcasts retrieved from the search
      */
     private List<PodcastSearchResult> searchResults;
     private Disposable disposable;
@@ -232,27 +241,86 @@ public class OnlineSearchFragment extends Fragment implements AVListener {
      */
     private void initializeAlanListener(){
         Alan.getInstance().setVisualState("Podcast Results");
-        Alan.getInstance().registerCmdListener(this);
+        /**
+         * Clearing the previous callbacks from the Alan if any, before registering new one.
+         * Because, no other call back should active, only the present view call back should be active.
+         */
+
+        Alan.getInstance().clearCallbacks();
+
+        Alan.getInstance().registerCallback(new AlanCallback() {
+            @Override
+            public void onAlanStateChanged(@NonNull AlanState alanState) {
+                super.onAlanStateChanged(alanState);
+            }
+
+            @Override
+            public void onRecognizedEvent(EventRecognised eventRecognised) {
+                super.onRecognizedEvent(eventRecognised);
+            }
+
+            @Override
+            public void onParsedEvent(EventParsed eventParsed) {
+                super.onParsedEvent(eventParsed);
+            }
+
+            @Override
+            public void onOptionsReceived(EventOptions eventOptions) {
+                super.onOptionsReceived(eventOptions);
+            }
+
+            @Override
+            public void onCommandReceived(EventCommand eventCommand) {
+                super.onCommandReceived(eventCommand);
+                AlanCommand alanCommand = Alan.getInstance().processAlanEventCommand(eventCommand);
+                handleAlanVoiceCommand(alanCommand);
+            }
+
+            @Override
+            public void onTextEvent(EventText eventText) {
+                super.onTextEvent(eventText);
+            }
+
+            @Override
+            public void onEvent(String event, String payload) {
+                super.onEvent(event, payload);
+            }
+
+            @Override
+            public void onError(String error) {
+                super.onError(error);
+            }
+        });
     }
 
-    @Override
-    public void handleAlanCommand(String alanCmd, String alanCmdValue) {
-        switch(alanCmd){
-            case "go-back":
-                EditText combinedFeedSearchBox  = getActivity().findViewById(R.id.combinedFeedSearchBox);
-                combinedFeedSearchBox.setText("", TextView.BufferType.EDITABLE);
-                getActivity().getSupportFragmentManager().popBackStack();
-                break;
-            case "select-podcast":
-                if(searchResults != null) {
-                    Alan.getInstance().getAlanButton().playText("Fetching the podcast details");
-                    Integer pos = Integer.parseInt(alanCmdValue) - 1;
-                    PodcastSearchResult podcast = searchResults.get(pos);
-                    Intent intent = new Intent(getActivity(), OnlineFeedViewActivity.class);
-                    intent.putExtra(OnlineFeedViewActivity.ARG_FEEDURL, podcast.feedUrl);
-                    startActivityForResult(intent, ACTIVITY_FEED_RESULT);
-                }
-                break;
+    /**
+     * Method handles the alan voice commands and process the event actions associated with the voice commands.
+     *
+     * @param alanCommand
+     */
+    public void handleAlanVoiceCommand(AlanCommand alanCommand) {
+        if(!alanCommand.hasError()) {
+            String cmd = alanCommand.getCommand();
+            String value = alanCommand.getValue();
+            switch(cmd) {
+                case "go-back":
+                    EditText combinedFeedSearchBox = getActivity().findViewById(R.id.combinedFeedSearchBox);
+                    combinedFeedSearchBox.setText("", TextView.BufferType.EDITABLE);
+                    getActivity().getSupportFragmentManager().popBackStack();
+                    break;
+                case "select-podcast":
+                    if (searchResults != null) {
+                        Alan.getInstance().getAlanButton().playText("Fetching the podcast details");
+                        Integer pos = Integer.parseInt(value) - 1;
+                        PodcastSearchResult podcast = searchResults.get(pos);
+                        Intent intent = new Intent(getActivity(), OnlineFeedViewActivity.class);
+                        intent.putExtra(OnlineFeedViewActivity.ARG_FEEDURL, podcast.feedUrl);
+                        startActivityForResult(intent, ACTIVITY_FEED_RESULT);
+                    }
+                    break;
+            }
+        } else{
+            Alan.getInstance().playText(alanCommand.getError());
         }
     }
 

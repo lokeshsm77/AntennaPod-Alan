@@ -1,12 +1,18 @@
 package de.danoeh.antennapod.alan;
 
+import com.alan.alansdk.AlanCallback;
 import com.alan.alansdk.AlanConfig;
 import com.alan.alansdk.button.AlanButton;
+import com.alan.alansdk.events.EventCommand;
+import com.google.gson.Gson;
 
 import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import de.danoeh.antennapod.alan.data.AlanCommand;
+import de.danoeh.antennapod.alan.data.Msgs;
 
 public class Alan {
 
@@ -15,19 +21,6 @@ public class Alan {
     private AlanButton alanButton;
 
     private static Alan INSTANCE;
-
-    private static AVHandler alanCallback;
-
-    private Alan()
-    {
-        alanCallback = new AVHandler();
-
-    }
-
-    /*private static class AlanSingleton
-    {
-        private static final Alan INSTANCE = new Alan();
-    }*/
 
     public static Alan getInstance()
     {
@@ -39,7 +32,6 @@ public class Alan {
 
     public static void clearInstance(){
         INSTANCE = null;
-        alanCallback = null;
     }
 
 
@@ -55,7 +47,6 @@ public class Alan {
         }
         this.alanButton = alanButton;
         initConfig();
-        registerCallback();
     }
 
     public void initConfig(){
@@ -65,13 +56,15 @@ public class Alan {
         this.getAlanButton().initWithConfig(config);
     }
 
-    public void registerCallback(){
-        this.getAlanButton().registerCallback(this.alanCallback);
+    public void registerCallback(AlanCallback alanCallback){
+        this.getAlanButton().registerCallback(alanCallback);
     }
 
-    public void registerCmdListener(AVListener cmdListener){
-        this.alanCallback.registerAlanCmdListener(cmdListener);
+    public void clearCallbacks(){
+        if(this.getAlanButton() != null)
+            this.getAlanButton().clearCallbacks();
     }
+
 
     public void clearAlanInstance(){
         if(this.getAlanButton() != null) {
@@ -104,4 +97,31 @@ public class Alan {
     public void callProjectApi(String apiFunction, String data){
         this.getAlanButton().callProjectApi(apiFunction, data);
     }
+
+    /**
+     * This method process the alan even command object and returns the data of the event, command and value.
+     * @param eventCommand
+     * @return
+     */
+
+    public AlanCommand processAlanEventCommand(EventCommand eventCommand){
+        AlanCommand alanCommand;
+        try {
+            JSONObject commandObject = eventCommand.getData();
+            if( commandObject != null && commandObject.getJSONObject("data") != null) {
+                Gson gson = new Gson();
+                alanCommand = gson.fromJson(commandObject.getJSONObject("data").toString(), AlanCommand.class);
+            } else {
+                alanCommand = new AlanCommand(Msgs.INVALID_OPERATION);
+                Alan.getInstance().getAlanButton().playText(Msgs.INVALID_OPERATION);
+            }
+        } catch (Exception e) {
+            Alan.getInstance().getAlanButton().playText(Msgs.INVALID_RESPONSE);
+            alanCommand = new AlanCommand(Msgs.INVALID_RESPONSE);
+            e.printStackTrace();
+        }
+
+        return alanCommand;
+    }
+
 }

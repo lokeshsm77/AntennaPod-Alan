@@ -159,7 +159,7 @@ public class MainActivity extends CastEnabledActivity {
      *
      */
     private void setAlanVisualState(){
-        Alan.getInstance().setVisualState("Search Podcast");
+        Alan.getInstance().setVisualState("Add Podcast");
     }
 
     private BottomSheetBehavior.BottomSheetCallback bottomSheetCallback =
