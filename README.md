@@ -40,7 +40,7 @@ Step 7. Open - MainActivity.java - Create a new variable of AlanButton and initi
             alanButton = findViewById(R.id.alan_button);
       }
       
-Step 8. Copy the project key code from Alan studio - embed section - select android tab and copy the key.
+Step 8. Copy the project key code from Alan studio - embed section - select android tab and copy the key, and set the project id in Alan.java 
 
       AlanConfig config = AlanConfig.builder()
       .setProjectId("18db81871cd67aedeca572e1d8b807a3e2338fdd0dc/stage")
