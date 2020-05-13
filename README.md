@@ -1,14 +1,58 @@
+# Registration with Alan Studio
+Step 1. Please register at https://studio.alan.app/register
+
+Step 2. After the regitration complete, please login
+
+Step 3. Create New Project
+
+Step 4. Add new script - and copy the voice script from "https://github.com/lokeshsm77/AlanScripts-AntennaPod" and save the script.
+
+# Configuration on Alan SDK
+Step 1. Open build.gradle - Add the Alan Maven URL in the project repository in all projects repository section.
+
+      maven { url "https://mymavenrepo.com/repo/fSCXIHAoBMWBdlZGqq6n/"}.
+      
+Step 2. Create new variable called alanSDKVersion = "4.7.7", in project.ext section.
+
+Step 3. Update the minSdkVersion value to 21.
+
+Step 4. Open - app - build.gradle - Add the dependency of  Alan SDK in dependencies.
+
+      implementation "app.alan:sdk:$alanSDKVersion".
+      
+Step 5. Open AndroidMainfest.xml - and set the permission for RECORD_AUDIO.
+      
+      <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+      
+Step 6. Open - main.xml - Add the alan button to main layout.
+
+      <com.alan.alansdk.button.AlanButton
+        android:id="@+id/alan_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+Step 7. Open - MainActivity.java - Create new variable of AlanButton and initialize the alanButton
+
+      private AlanButton alanButton;
+      ....
+      protected void onCreate(Bundle savedInstanceState) {
+            ...
+            alanButton = findViewById(R.id.alan_button);
+      }
+      
+Step 8. Copy the project key code from Aaln studio - embed section - select android tab and copy the key.
+
+      AlanConfig config = AlanConfig.builder()
+      .setProjectId("18db81871cd67aedeca572e1d8b807a3e2338fdd0dc/stage")
+      .build();
+      
+# Please find more details at 
+      https://alan.app/docs/client-api/android
+
+
 # AntennaPod
 
-This is the official repository of AntennaPod, the easy-to-use, flexible and open-source podcast manager for Android.
-
-[<img src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png"
-      alt="Get it on Google Play"
-      height="70">](https://play.google.com/store/apps/details?id=de.danoeh.antennapod)
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
-      alt="Get it on F-Droid"
-      height="70">](https://f-droid.org/app/de.danoeh.antennapod)
-      
+     
 <img src="https://raw.githubusercontent.com/AntennaPod/AntennaPod/develop/app/src/main/play/listings/en-US/graphics/phone-screenshots/00.png" alt="Screenshot 0" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/AntennaPod/develop/app/src/main/play/listings/en-US/graphics/phone-screenshots/01.png" alt="Screenshot 1" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/AntennaPod/develop/app/src/main/play/listings/en-US/graphics/phone-screenshots/02.png" alt="Screenshot 2" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/AntennaPod/develop/app/src/main/play/listings/en-US/graphics/phone-screenshots/03.png" alt="Screenshot 3" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/AntennaPod/develop/app/src/main/play/listings/en-US/graphics/phone-screenshots/04.png" alt="Screenshot 4" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/AntennaPod/develop/app/src/main/play/listings/en-US/graphics/phone-screenshots/05.png" alt="Screenshot 5" height="200">
 
 
