@@ -7,7 +7,7 @@ Step 3. Create a New Project
 
 Step 4. Add new script - and copy the voice script from "https://github.com/lokeshsm77/AlanScripts-AntennaPod" and save the script.
 
-# Configuration on Alan SDK
+# Configuration of Alan SDK
 Step 1. Open build.gradle - Add the Alan Maven URL in the project repository in all projects repository section.
 
      maven { url "https://mymavenrepo.com/repo/fSCXIHAoBMWBdlZGqq6n/"}.
