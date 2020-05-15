@@ -46,7 +46,7 @@ Step 8. Copy the project key code from Alan studio - embed section - select andr
      .setProjectId("18db81871cd67aedeca572e1d8b807a3e2338fdd0dc/stage")
      .build();
 
-# Please find complete documents
+# Please find complete document of Alan integration for Android
 https://alan.app/docs/client-api/android
 
 
