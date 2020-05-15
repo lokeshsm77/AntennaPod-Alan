@@ -10,17 +10,23 @@ Step 4. Add new script - and copy the voice script from "https://github.com/loke
 # Configuration on Alan SDK
 Step 1. Open build.gradle - Add the Alan Maven URL in the project repository in all projects repository section.
 maven { url "https://mymavenrepo.com/repo/fSCXIHAoBMWBdlZGqq6n/"}.
+
 Step 2. Create new variable called alanSDKVersion = "4.7.7", in project.ext section.
+
 Step 3. Update the minSdkVersion value to 21.
+
 Step 4. Open - app - build.gradle - Add the dependency of  Alan SDK in dependencies.
 implementation "app.alan:sdk:$alanSDKVersion".
+
 Step 5. Open AndroidMainfest.xml - and set the permission for RECORD_AUDIO.
 <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
 Step 6. Open - main.xml - Add the alan button to the main layout.
 <com.alan.alansdk.button.AlanButton
 android:id="@+id/alan_button"
 android:layout_width="wrap_content"
 android:layout_height="wrap_content"/>
+
 Step 7. Open - MainActivity.java - Create a new variable of AlanButton and initialize the alanButton
 private AlanButton alanButton;
 ....
@@ -28,10 +34,12 @@ protected void onCreate(Bundle savedInstanceState) {
 ...
 alanButton = findViewById(R.id.alan_button);
 }
+
 Step 8. Copy the project key code from Alan studio - embed section - select android tab and copy the key, and set the project id in Alan.java 
 AlanConfig config = AlanConfig.builder()
 .setProjectId("18db81871cd67aedeca572e1d8b807a3e2338fdd0dc/stage")
 .build();
+
 # Please find complete documents
 https://alan.app/docs/client-api/android
 
